@@ -126,6 +126,8 @@ def main():
     # 解析命令行参数
     from config import parse_args
     opt = parse_args()
+    from utils.device import set_device_preference
+    set_device_preference(opt.device)
 
     # ─── 加载 avatar 插件（触发 @register 注册）──────────────────────
     _avatar_modules = {
