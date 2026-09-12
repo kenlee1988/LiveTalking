@@ -5,6 +5,7 @@
 import json
 import asyncio
 from aiohttp import web
+import numpy as np
 
 from utils.logger import logger
 
@@ -104,6 +105,46 @@ async def humanaudio(request):
         return json_ok()
     except Exception as e:
         logger.exception('humanaudio exception:')
+        return json_error(str(e))
+
+
+async def humanpcm(request):
+    """接收 speech-to-speech 转发的 16 kHz 单声道 PCM16 小端音频。"""
+    try:
+        sessionid = request.query.get('sessionid', '')
+        avatar_session = get_session(request, sessionid)
+        if avatar_session is None:
+            request.app.setdefault('humanpcm_buffers', {}).pop(sessionid, None)
+            return json_error("session not found")
+
+        try:
+            sample_rate = int(request.query.get('sample_rate', '16000'))
+        except ValueError:
+            return json_error("invalid sample_rate")
+        if sample_rate != 16000:
+            return json_error("sample_rate must be 16000")
+
+        pcm = await request.read()
+        if len(pcm) > 64000:
+            return json_error("PCM payload too large")
+        if len(pcm) % 2:
+            return json_error("PCM16 payload must contain complete samples")
+
+        buffers = request.app.setdefault('humanpcm_buffers', {})
+        buffered = buffers.setdefault(sessionid, bytearray())
+        buffered.extend(pcm)
+        frame_bytes = 320 * 2  # 20 ms at 16 kHz, mono PCM16
+        frames = 0
+        while len(buffered) >= frame_bytes:
+            raw_frame = bytes(buffered[:frame_bytes])
+            del buffered[:frame_bytes]
+            frame = np.frombuffer(raw_frame, dtype='<i2').astype(np.float32) / 32768.0
+            avatar_session.put_audio_frame(frame, {})
+            frames += 1
+
+        return json_ok(data={"frames": frames, "buffered_bytes": len(buffered)})
+    except Exception as e:
+        logger.exception('humanpcm exception:')
         return json_error(str(e))
 
 
@@ -246,6 +287,7 @@ def setup_routes(app):
     app.router.add_get("/", index)
     app.router.add_post("/human", human)
     app.router.add_post("/humanaudio", humanaudio)
+    app.router.add_post("/humanpcm", humanpcm)
     app.router.add_post("/set_audiotype", set_audiotype)
     app.router.add_post("/record", record)
     app.router.add_post("/interrupt_talk", interrupt_talk)
