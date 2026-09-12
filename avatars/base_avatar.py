@@ -97,7 +97,8 @@ class BaseAvatar:
             # 'indextts2': 'tts.indextts2',
             'azuretts': 'tts.azure',
             'qwentts': 'tts.qwentts',
-            'omnitts': 'tts.omnitts'
+            'omnitts': 'tts.omnitts',
+            'none': 'tts.null',
         }
 
         if opt.tts in _tts_modules:
@@ -499,4 +500,3 @@ class BaseAvatar:
 
         process_quit_event.set()
         process_thread.join()
-
