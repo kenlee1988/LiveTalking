@@ -65,6 +65,9 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=16, help="infer batch")
     parser.add_argument('--modelres', type=int, default=192)
     parser.add_argument('--modelfile', type=str, default='')
+    parser.add_argument('--device', choices=('auto', 'cpu', 'cuda', 'xpu', 'mps'),
+                        default='auto',
+                        help='PyTorch inference device; auto prefers CUDA, then XPU/MPS, then CPU')
 
     # ─── 自定义动作和多形象 ────────────────────────────────────────────
     parser.add_argument('--customvideo_config', type=str, default='',

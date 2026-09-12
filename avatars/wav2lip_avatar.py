@@ -49,7 +49,7 @@ device = initialize_device()
 logger.info('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):
-    if device == 'cuda':
+    if device.type == 'cuda':
         checkpoint = torch.load(checkpoint_path)
     else:
         checkpoint = torch.load(checkpoint_path,
@@ -145,4 +145,3 @@ class LipReal(BaseAvatar):
         res_frame = cv2.resize(pred_frame.astype(np.uint8),(x2-x1,y2-y1))
         combine_frame[y1:y2, x1:x2] = res_frame
         return combine_frame
-
